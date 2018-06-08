@@ -92,11 +92,11 @@ def build_vocab_dict(sentences, padding_char, unknown_char):
 
 
 def save_vocab(vocab_dict):
-    f = open("vocab_dict.json", 'w') 
+    f = open(vocab_dict, 'w') 
     f.write(json.dumps(vocab_dict)) 
     f.close() 
-def load_vocab():
-    f = open("vocab_dict.json", 'r') 
+def load_vocab(vocab_dict):
+    f = open(vocab_dict, 'r') 
     vocab_dict = json.loads(f.read() )
     f.close() 
     idx_dict = idx_dict = {idx:word for word, idx in vocab_dict.items()}

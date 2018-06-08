@@ -5,28 +5,30 @@ from keras.preprocessing.sequence import pad_sequences
 
 
 def create_model(x_vocab_len, x_max_len, y_vocab_len, y_max_len, hidden_size, num_layers):
-	model = Sequential()
+    model = Sequential()
 
-	# Creating encoder network
-	model.add(Embedding(x_vocab_len, 1024, input_length=x_max_len, mask_zero=True))
-	model.add(Bidirectional(GRU(hidden_size)))
-	model.add(Dropout(0.2))
-	model.add(RepeatVector(y_max_len))
+    # Creating encoder network
+    model.add(Embedding(x_vocab_len, 1024, input_length=x_max_len, mask_zero=True))
+    model.add(Bidirectional(GRU(hidden_size)))
+    model.add(Dropout(0.2))
+    model.add(RepeatVector(y_max_len))
 
-	# Creating decoder network
-	for _ in range(num_layers):
-		model.add(GRU(hidden_size * 2, return_sequences=True))
-	model.add(Dropout(0.2))
-	model.add(TimeDistributed(Dense(y_vocab_len)))
-	model.add(Activation('softmax'))
-	model.compile(loss='categorical_crossentropy',
-			optimizer='rmsprop',
-			metrics=['accuracy'])
-	return model
-	
+    # Creating decoder network
+    for _ in range(num_layers):
+        model.add(GRU(hidden_size * 2, return_sequences=True))
+    model.add(Dropout(0.2))
+    model.add(TimeDistributed(Dense(y_vocab_len)))
+    model.add(Activation('softmax'))
+    model.compile(loss='categorical_crossentropy',
+            optimizer='rmsprop',
+            metrics=['accuracy'])
+    return model
+    
 def attention(inputs):
-    att_prob = Dense(int(inputs.shape[-1]), activation = 'softmax')(inputs)
-    output_att = merge([inputs, att_prob ], mode='mul')
+    att = Permute((2,1))(inputs)
+    att = Dense(int(inputs.shape[-1]), activation = 'softmax')(att)
+    att = Permute((2,1))(inputs)
+    output_att = merge([inputs, att ], mode='mul')
     return output_att
 
 def create_model_with_attention(x_vocab_len, x_max_len, y_vocab_len, y_max_len, embedding_size, hidden_size, num_layers):
