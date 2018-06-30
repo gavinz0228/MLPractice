@@ -49,6 +49,9 @@ def read_lines(file_path, separator, name_idx, content_idx, start_line = 0, limi
     line_added = 0
     prev_name = None
     sentences = []
+    abb_word = ['won’t','won\'t','wouldn’t','wouldn\'t','’m', '’re', '’ve', '’ll', '’s','’d', 'n’t', '\'m', '\'re', '\'ve', '\'ll', '\'s', '\'d', 'can\'t', 'n\'t', 'B: ', 'A: ', ',', ';', '.', '?', '!', ':', '. ?', ',   .', '. ,', 'eos', 'bos']
+    orig_word = ['will not','will not','would not','would not',' am', ' are', ' have', ' will', ' is', ' had', ' not', ' am', ' are', ' have', ' will', ' is', ' had', 'can not', ' not', '', '', ' ,', ' ;', ' .', ' ?', ' !', ' :', '? ', '.', ',', '', '']
+
     for line in open(file_path, 'r', encoding="utf-8"):
 
         if ln >= start_line + limit:
@@ -62,7 +65,9 @@ def read_lines(file_path, separator, name_idx, content_idx, start_line = 0, limi
         ln += 1
         items = line.split(separator)
         name = items[name_idx].lower()
-        content = items[content_idx].lower().replace('?', '').replace('!', '').replace( '.', '').replace( ',', '').replace( '-', '')
+        content = items[content_idx].lower()
+        for i in range(len(abb_word)):
+            content = content.replace(abb_word[i], orig_word[i])
         words = content.split()
         if prev_name != name:
             sentences.append(words)
@@ -104,10 +109,11 @@ def load_vocab(vocab_dict):
 def sentence_to_vec(sentences, vocab_dict, unknown_char, sentence_length):
     l = len(sentences)
     vec = []
-    unk_idx = vocab_dict[unknown_char]
+    #unk_idx = vocab_dict[unknown_char]
 
     for sen in sentences:
-        vec.append( [vocab_dict[x] if x in vocab_dict else unk_idx for x in sen ][:20])
+        word_list = [vocab_dict[x] for x in sen if x in vocab_dict ][:sentence_length ]
+        vec.append( word_list )
 
     padded = pad_sequences(vec, maxlen=sentence_length, dtype='int32')
     return padded
@@ -133,3 +139,30 @@ def vectorize_sentence(sentences, vocab_dict, vocab_size, sentence_size):
 
     y_vec = to_one_hot(y_vec, sentence_size, vocab_size)
     return x_vec, y_vec
+def loadGloVe(filename, num_words):
+    vocab = []
+    file = open(filename,'r', encoding="utf8")
+    i = 0
+    for line in file.readlines():
+        if i == num_words:
+            break
+        row = line.strip().split(' ')
+        vocab.append( ( row[0], np.array( [ float(x) for x in row[1:]] )  ) )
+        i += 1
+    print('Loaded GloVe!')
+    file.close()
+    return vocab
+def get_vocab(glove_path, vocab_size):
+    prepend = [(' ', np.zeros((300)))]
+    vocab = loadGloVe(glove_path, vocab_size - len(prepend))
+    vocab = prepend + vocab
+    vocab_to_idx = {}
+    idx_to_vocab = {}
+    embeding_matrix = []
+    for i in range(vocab_size):
+        vo = vocab[i]
+        vocab_to_idx[vo[0]] = i
+        idx_to_vocab[i] = vo[0]
+        embeding_matrix.append(vo[1])
+    embeding_matrix = np.array(embeding_matrix)
+    return vocab_to_idx, idx_to_vocab, embeding_matrix
